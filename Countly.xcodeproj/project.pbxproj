@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		B3FE590F209DB8E0009EEF4A /* Countly.h in Headers */ = {isa = PBXBuildFile; fileRef = B3FE590D209DB8DF009EEF4A /* Countly.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		B3FE593A209DB92F009EEF4A /* CountlyEvent.h in Headers */ = {isa = PBXBuildFile; fileRef = B3FE5915209DB92B009EEF4A /* CountlyEvent.h */; };
 		B3FE593B209DB92F009EEF4A /* CountlyLocationManager.m in Sources */ = {isa = PBXBuildFile; fileRef = B3FE5916209DB92B009EEF4A /* CountlyLocationManager.m */; };
 		B3FE593C209DB92F009EEF4A /* CountlyPushNotifications.m in Sources */ = {isa = PBXBuildFile; fileRef = B3FE5917209DB92B009EEF4A /* CountlyPushNotifications.m */; };
@@ -23,10 +22,9 @@
 		B3FE5946209DB92F009EEF4A /* CountlyAPMNetworkLog.h in Headers */ = {isa = PBXBuildFile; fileRef = B3FE5921209DB92C009EEF4A /* CountlyAPMNetworkLog.h */; };
 		B3FE5947209DB92F009EEF4A /* CountlyCrashReporter.m in Sources */ = {isa = PBXBuildFile; fileRef = B3FE5922209DB92C009EEF4A /* CountlyCrashReporter.m */; };
 		B3FE5948209DB92F009EEF4A /* CountlyLocationManager.h in Headers */ = {isa = PBXBuildFile; fileRef = B3FE5923209DB92C009EEF4A /* CountlyLocationManager.h */; };
-		B3FE5949209DB92F009EEF4A /* CountlyConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = B3FE5924209DB92C009EEF4A /* CountlyConfig.h */; };
+		B3FE5949209DB92F009EEF4A /* CountlyConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = B3FE5924209DB92C009EEF4A /* CountlyConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		B3FE594A209DB92F009EEF4A /* CountlyCommon.h in Headers */ = {isa = PBXBuildFile; fileRef = B3FE5925209DB92C009EEF4A /* CountlyCommon.h */; };
 		B3FE594B209DB92F009EEF4A /* CountlyDeviceInfo.h in Headers */ = {isa = PBXBuildFile; fileRef = B3FE5926209DB92C009EEF4A /* CountlyDeviceInfo.h */; };
-		B3FE594C209DB92F009EEF4A /* Countly.h in Headers */ = {isa = PBXBuildFile; fileRef = B3FE5927209DB92C009EEF4A /* Countly.h */; };
 		B3FE594D209DB92F009EEF4A /* CountlyDeviceInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = B3FE5928209DB92C009EEF4A /* CountlyDeviceInfo.m */; };
 		B3FE594E209DB92F009EEF4A /* Countly_OpenUDID.h in Headers */ = {isa = PBXBuildFile; fileRef = B3FE5929209DB92C009EEF4A /* Countly_OpenUDID.h */; };
 		B3FE594F209DB92F009EEF4A /* CHANGELOG.md in Resources */ = {isa = PBXBuildFile; fileRef = B3FE592A209DB92D009EEF4A /* CHANGELOG.md */; };
@@ -34,7 +32,7 @@
 		B3FE5951209DB92F009EEF4A /* CountlyPushNotifications.h in Headers */ = {isa = PBXBuildFile; fileRef = B3FE592C209DB92D009EEF4A /* CountlyPushNotifications.h */; };
 		B3FE5952209DB92F009EEF4A /* CountlyUserDetails.m in Sources */ = {isa = PBXBuildFile; fileRef = B3FE592D209DB92D009EEF4A /* CountlyUserDetails.m */; };
 		B3FE5953209DB92F009EEF4A /* CountlyViewTracking.m in Sources */ = {isa = PBXBuildFile; fileRef = B3FE592E209DB92D009EEF4A /* CountlyViewTracking.m */; };
-		B3FE5954209DB92F009EEF4A /* CountlyUserDetails.h in Headers */ = {isa = PBXBuildFile; fileRef = B3FE592F209DB92D009EEF4A /* CountlyUserDetails.h */; };
+		B3FE5954209DB92F009EEF4A /* CountlyUserDetails.h in Headers */ = {isa = PBXBuildFile; fileRef = B3FE592F209DB92D009EEF4A /* CountlyUserDetails.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		B3FE5955209DB92F009EEF4A /* CountlyAPM.h in Headers */ = {isa = PBXBuildFile; fileRef = B3FE5930209DB92D009EEF4A /* CountlyAPM.h */; };
 		B3FE5956209DB92F009EEF4A /* CountlyConsentManager.m in Sources */ = {isa = PBXBuildFile; fileRef = B3FE5931209DB92E009EEF4A /* CountlyConsentManager.m */; };
 		B3FE5957209DB92F009EEF4A /* CountlyNotificationService.h in Headers */ = {isa = PBXBuildFile; fileRef = B3FE5932209DB92E009EEF4A /* CountlyNotificationService.h */; };
@@ -45,6 +43,7 @@
 		B3FE595C209DB92F009EEF4A /* CountlyEvent.m in Sources */ = {isa = PBXBuildFile; fileRef = B3FE5937209DB92F009EEF4A /* CountlyEvent.m */; };
 		B3FE595D209DB92F009EEF4A /* CountlyConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = B3FE5938209DB92F009EEF4A /* CountlyConfig.m */; };
 		B3FE595E209DB92F009EEF4A /* CountlyNotificationService.m in Sources */ = {isa = PBXBuildFile; fileRef = B3FE5939209DB92F009EEF4A /* CountlyNotificationService.m */; };
+		B3FE5961209DBD39009EEF4A /* Countly.h in Headers */ = {isa = PBXBuildFile; fileRef = B3FE590D209DB8DF009EEF4A /* Countly.h */; settings = {ATTRIBUTES = (Public, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -170,9 +169,10 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B3FE5944209DB92F009EEF4A /* CountlyConsentManager.h in Headers */,
+				B3FE5961209DBD39009EEF4A /* Countly.h in Headers */,
 				B3FE5949209DB92F009EEF4A /* CountlyConfig.h in Headers */,
-				B3FE594C209DB92F009EEF4A /* Countly.h in Headers */,
+				B3FE5954209DB92F009EEF4A /* CountlyUserDetails.h in Headers */,
+				B3FE5944209DB92F009EEF4A /* CountlyConsentManager.h in Headers */,
 				B3FE5951209DB92F009EEF4A /* CountlyPushNotifications.h in Headers */,
 				B3FE595A209DB92F009EEF4A /* CountlyStarRating.h in Headers */,
 				B3FE593A209DB92F009EEF4A /* CountlyEvent.h in Headers */,
@@ -183,9 +183,7 @@
 				B3FE5957209DB92F009EEF4A /* CountlyNotificationService.h in Headers */,
 				B3FE5958209DB92F009EEF4A /* CountlyViewTracking.h in Headers */,
 				B3FE5948209DB92F009EEF4A /* CountlyLocationManager.h in Headers */,
-				B3FE5954209DB92F009EEF4A /* CountlyUserDetails.h in Headers */,
 				B3FE5946209DB92F009EEF4A /* CountlyAPMNetworkLog.h in Headers */,
-				B3FE590F209DB8E0009EEF4A /* Countly.h in Headers */,
 				B3FE5942209DB92F009EEF4A /* CountlyCrashReporter.h in Headers */,
 				B3FE593E209DB92F009EEF4A /* CountlyPersistency.h in Headers */,
 				B3FE5955209DB92F009EEF4A /* CountlyAPM.h in Headers */,
