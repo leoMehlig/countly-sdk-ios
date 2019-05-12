@@ -1,3 +1,48 @@
+## 19.02
+- Added push notification support for macOS
+- Added provisional push notification permission support for iOS12
+- Added remote config feature
+- Added `recordPushNotificationToken` method to be used after device ID changes
+- Added `clearPushNotificationToken` method to be used after device ID changes
+- Discarded `Push Open` event and replaced it with `Push Action` event
+- Fixed push notification token not being sent on some iOS12 devices
+- Fixed device ID change request delaying issue by discarding delay altogether
+- Fixed internal view controller presenting failure when root view controller is not ready yet
+- Fixed `openURL` freeze caused by iOS
+- Fixed wrong `kCountlyQSKeyLocationIP` key in location info requests
+- Fixed missing app key in feedback widget requests
+- Fixed feedback widget dismiss button position
+
+- Other various improvements
+    - Discarded separate UIWindow usage for presenting feedback widgets
+    - Added checksum to feedback widget requests
+    - Improved internal logging for request queue
+
+
+
+## 18.08
+- Added feedback widgets support
+- Added limit for number of custom crash logs (100 logs)
+- Added limit for each custom crash log length (1000 chars)
+- Added support for cancelling timed events
+- Added support for recording fatal exceptions manually
+- Added `userInfo` to crash report custom property
+- Added delay before sending change device ID request (server requirement)
+- Renamed `isAutoViewTrackingEnabled` as `isAutoViewTrackingActive`
+- Fixed Xcode warnings for `askForNotificationPermission` method 
+- Fixed `UIAlertController` leak in push notification manager
+- Fixed `crashSegmentation` availability for manually recorded crashes
+- Fixed `openURL:` call thread as main thread
+- Updated minimum supported `macOS` version as `10.10`
+
+- Other various improvements
+  - Discarded separate `UIWindow` for presenting `UIAlertControllers`
+  - Refactored `buildUUID` and `executableName` as properties
+  - Refactored custom crash log array and date formatter
+  - Updated HeaderDocs, inline notes, pragma marks 
+
+
+
 ## 18.04
 - Added consent management for GDPR compliance
 - Exposed device ID to be used for data export and/or removal requests

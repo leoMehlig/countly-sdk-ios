@@ -108,20 +108,24 @@
     CountlyLocationManager.sharedInstance.IP = config.IP;
     [CountlyLocationManager.sharedInstance sendLocationInfo];
 
+    CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
+    CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
+    if ([config.features containsObject:CLYCrashReporting])
+    {
+        CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
+        [CountlyCrashReporter.sharedInstance startCrashReporting];
+    }
+#endif
+
+#if (TARGET_OS_IOS || TARGET_OS_OSX)
     if ([config.features containsObject:CLYPushNotifications])
     {
         CountlyPushNotifications.sharedInstance.isEnabledOnInitialConfig = YES;
         CountlyPushNotifications.sharedInstance.isTestDevice = config.isTestDevice;
         CountlyPushNotifications.sharedInstance.sendPushTokenAlways = config.sendPushTokenAlways;
         CountlyPushNotifications.sharedInstance.doNotShowAlertForNotifications = config.doNotShowAlertForNotifications;
+        CountlyPushNotifications.sharedInstance.launchNotification = config.launchNotification;
         [CountlyPushNotifications.sharedInstance startPushNotifications];
-    }
-
-    if ([config.features containsObject:CLYCrashReporting])
-    {
-        CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
-        CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
-        [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
 #endif
 
@@ -143,6 +147,10 @@
     [CountlyCommon.sharedInstance startAppleWatchMatching];
 
     [CountlyCommon.sharedInstance startAttribution];
+
+    CountlyRemoteConfig.sharedInstance.isEnabledOnInitialConfig = config.enableRemoteConfig;
+    CountlyRemoteConfig.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;
+    [CountlyRemoteConfig.sharedInstance startRemoteConfig];
 
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
 }
@@ -193,6 +201,9 @@
 
         [CountlyPersistency.sharedInstance clearAllTimedEvents];
     }
+
+    [CountlyRemoteConfig.sharedInstance clearCachedRemoteConfig];
+    [CountlyRemoteConfig.sharedInstance startRemoteConfig];
 }
 
 - (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue
@@ -471,7 +482,7 @@
 
     if (!event)
     {
-        COUNTLY_LOG(@"Event with key '%@' not started before!", key);
+        COUNTLY_LOG(@"Event with key '%@' not started yet or cancelled/ended before!", key);
         return;
     }
 
@@ -483,20 +494,29 @@
     [CountlyPersistency.sharedInstance recordEvent:event];
 }
 
+- (void)cancelEvent:(NSString *)key
+{
+    if (!CountlyConsentManager.sharedInstance.consentForEvents)
+        return;
+
+    CountlyEvent *event = [CountlyPersistency.sharedInstance timedEventForKey:key];
+
+    if (!event)
+    {
+        COUNTLY_LOG(@"Event with key '%@' not started yet or cancelled/ended before!", key);
+        return;
+    }
+
+    COUNTLY_LOG(@"Event with key '%@' cancelled!", key);
+}
 
 
 #pragma mark - Push Notifications
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_OSX)
 
 - (void)askForNotificationPermission
 {
-    NSUInteger options = 0;
-    if (@available(iOS 10.0, *))
-        options = UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert;
-    else
-        options = UIUserNotificationTypeBadge | UIUserNotificationTypeSound | UIUserNotificationTypeAlert;
-
-    [CountlyPushNotifications.sharedInstance askForNotificationPermissionWithOptions:options completionHandler:nil];
+    [CountlyPushNotifications.sharedInstance askForNotificationPermissionWithOptions:0 completionHandler:nil];
 }
 
 - (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
@@ -507,6 +527,16 @@
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 {
     [CountlyPushNotifications.sharedInstance recordActionForNotification:userInfo clickedButtonIndex:buttonIndex];
+}
+
+- (void)recordPushNotificationToken
+{
+    [CountlyPushNotifications.sharedInstance sendToken];
+}
+
+- (void)clearPushNotificationToken
+{
+    [CountlyPushNotifications.sharedInstance clearToken];
 }
 #endif
 
@@ -541,12 +571,17 @@
 #if TARGET_OS_IOS
 - (void)recordHandledException:(NSException *)exception
 {
-    [CountlyCrashReporter.sharedInstance recordHandledException:exception withStackTrace:nil];
+    [CountlyCrashReporter.sharedInstance recordException:exception withStackTrace:nil isFatal:NO];
 }
 
 - (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray *)stackTrace
 {
-    [CountlyCrashReporter.sharedInstance recordHandledException:exception withStackTrace:stackTrace];
+    [CountlyCrashReporter.sharedInstance recordException:exception withStackTrace:stackTrace isFatal:NO];
+}
+
+- (void)recordUnhandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace
+{
+    [CountlyCrashReporter.sharedInstance recordException:exception withStackTrace:stackTrace isFatal:YES];
 }
 
 - (void)recordCrashLog:(NSString *)log
@@ -600,14 +635,14 @@
     [CountlyViewTracking.sharedInstance removeExceptionForAutoViewTracking:exception.copy];
 }
 
-- (void)setIsAutoViewTrackingEnabled:(BOOL)isAutoViewTrackingEnabled
+- (void)setIsAutoViewTrackingActive:(BOOL)isAutoViewTrackingActive
 {
-    CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled = isAutoViewTrackingEnabled;
+    CountlyViewTracking.sharedInstance.isAutoViewTrackingActive = isAutoViewTrackingActive;
 }
 
-- (BOOL)isAutoViewTrackingEnabled
+- (BOOL)isAutoViewTrackingActive
 {
-    return CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled;
+    return CountlyViewTracking.sharedInstance.isAutoViewTrackingActive;
 }
 #endif
 
@@ -639,6 +674,37 @@
 {
     [CountlyStarRating.sharedInstance showDialog:completion];
 }
+
+- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
+{
+    [CountlyStarRating.sharedInstance checkFeedbackWidgetWithID:widgetID completionHandler:completionHandler];
+}
+
 #endif
+
+
+
+#pragma mark - Remote Config
+
+- (id)remoteConfigValueForKey:(NSString *)key
+{
+    return [CountlyRemoteConfig.sharedInstance remoteConfigValueForKey:key];
+}
+
+- (void)updateRemoteConfigWithCompletionHandler:(void (^)(NSError * error))completionHandler
+{
+    [CountlyRemoteConfig.sharedInstance updateRemoteConfigForForKeys:nil omitKeys:nil completionHandler:completionHandler];
+}
+
+- (void)updateRemoteConfigOnlyForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * error))completionHandler
+{
+    [CountlyRemoteConfig.sharedInstance updateRemoteConfigForForKeys:keys omitKeys:nil completionHandler:completionHandler];
+}
+
+- (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler
+{
+    [CountlyRemoteConfig.sharedInstance updateRemoteConfigForForKeys:nil omitKeys:omitKeys completionHandler:completionHandler];
+}
+
 
 @end

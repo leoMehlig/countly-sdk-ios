@@ -15,6 +15,8 @@ extern NSString* const CLYCrashReporting;
 extern NSString* const CLYAutoViewTracking;
 #elif TARGET_OS_TV
 extern NSString* const CLYAutoViewTracking;
+#elif TARGET_OS_OSX
+extern NSString* const CLYPushNotifications;
 #endif
 //NOTE: Disable APM feature until Countly Server completely supports it
 // extern NSString* const CLYAPM;
@@ -105,6 +107,12 @@ extern NSString* const CLYConsentAppleWatch;
  */
 @property (nonatomic) BOOL doNotShowAlertForNotifications;
 
+/**
+ * For handling push notifications for macOS apps on launch.
+ * @discussion Needs to be set in @c applicationDidFinishLaunching: method of macOS apps that uses @c CLYPushNotifications feature, in order to handle app launches by push notification click.
+ */
+@property (nonatomic) NSNotification* launchNotification;
+
 #pragma mark -
 
 /**
@@ -174,9 +182,9 @@ extern NSString* const CLYConsentAppleWatch;
 @property (nonatomic) NSUInteger eventSendThreshold;
 
 /**
- * Stored requests limit is used for limiting the number of request to be stored on the device, in case of a Countly Server connection problem.
+ * Stored requests limit is used for limiting the number of request to be stored on the device, in case Countly Server is not reachable.
  * @discussion In case Countly Server is down or unreachable for a very long time, queued request may reach excessive numbers, and this may cause problems with requests being sent to Countly Server and being stored on the device. To prevent this, SDK will only store requests up to @c storedRequestsLimit.
- * @discussion If number of stored requests reach @c storedRequestsLimit, SDK will start to drop oldest request while inserting the newest one instead.
+ * @discussion If number of stored requests reaches @c storedRequestsLimit, SDK will start to drop oldest request while appending the newest one.
  * @discussion If not set, it will be 1000 by default.
  */
 @property (nonatomic) NSUInteger storedRequestsLimit;
@@ -213,6 +221,13 @@ extern NSString* const CLYConsentAppleWatch;
  * For using custom crash segmentation with @c CLYCrashReporting feature.
  */
 @property (nonatomic, copy) NSDictionary* crashSegmentation;
+
+/**
+ * Crash log limit is used for limiting the number of crash logs to be stored on the device.
+ * @discussion If number of stored crash logs reaches @c crashLogLimit, SDK will start to drop oldest crash log while appending the newest one.
+ * @discussion If not set, it will be 100 by default.
+ */
+@property (nonatomic) NSUInteger crashLogLimit;
 
 #pragma mark -
 
@@ -268,6 +283,24 @@ extern NSString* const CLYConsentAppleWatch;
  * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to Countly Server.
  */
 @property (nonatomic, copy) void (^starRatingCompletion)(NSInteger rating);
+
+#pragma mark -
+
+/**
+ * For enabling automatic fetching of remote config values.
+ * @discussion If set, Remote Config values specified on Countly Server will be fetched on beginning of sessions.
+ */
+@property (nonatomic) BOOL enableRemoteConfig;
+
+/**
+ * Completion block to be executed after remote config is fetched from Countly Server, on start or device ID change.
+ * @discussion This completion block can be used to detect updating of remote config values is completed, either with success or failure.
+ * @discussion It has an @c NSError parameter that will be either @ nil or an @c NSError object, depending of request result.
+ * @discussion If there is no error, it will be executed with an @c nil, which means latest remote config values are ready to be used.
+ * @discussion If Countly Server is not reachable or if there is another error, it will be executed with an @c NSError indicating the problem.
+ * @discussion If @c enableRemoteConfig flag is not set on initial config, it will never be executed.
+ */
+@property (nonatomic, copy) void (^remoteConfigCompletionHandler)(NSError * _Nullable error);
 
 NS_ASSUME_NONNULL_END
 

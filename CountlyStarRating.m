@@ -5,10 +5,12 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyCommon.h"
+#if TARGET_OS_IOS
+#import <WebKit/WebKit.h>
+#endif
 
 @interface CountlyStarRating ()
 #if TARGET_OS_IOS
-@property (nonatomic) UIWindow* alertWindow;
 @property (nonatomic) UIAlertController* alertController;
 @property (nonatomic, copy) void (^ratingCompletion)(NSInteger);
 #endif
@@ -18,17 +20,30 @@ NSString* const kCountlyReservedEventStarRating = @"[CLY]_star_rating";
 NSString* const kCountlyStarRatingStatusSessionCountKey = @"kCountlyStarRatingStatusSessionCountKey";
 NSString* const kCountlyStarRatingStatusHasEverAskedAutomatically = @"kCountlyStarRatingStatusHasEverAskedAutomatically";
 
-NSString* const kCountlySRKeyPlatform    = @"platform";
-NSString* const kCountlySRKeyAppVersion  = @"app_version";
-NSString* const kCountlySRKeyRating      = @"rating";
+NSString* const kCountlySRKeyAppKey         = @"app_key";
+NSString* const kCountlySRKeyPlatform       = @"platform";
+NSString* const kCountlySRKeyAppVersion     = @"app_version";
+NSString* const kCountlySRKeyRating         = @"rating";
+NSString* const kCountlySRKeyWidgetID       = @"widget_id";
+NSString* const kCountlySRKeyDeviceID       = @"device_id";
+NSString* const kCountlySRKeySDKVersion     = @"sdk_version";
+NSString* const kCountlySRKeySDKName        = @"sdk_name";
+NSString* const kCountlySRKeyID             = @"_id";
+NSString* const kCountlySRKeyTargetDevices  = @"target_devices";
+NSString* const kCountlySRKeyPhone          = @"phone";
+NSString* const kCountlySRKeyTablet         = @"tablet";
+
+NSString* const kCountlyOutputEndpoint      = @"/o";
+NSString* const kCountlyFeedbackEndpoint    = @"/feedback";
+NSString* const kCountlyWidgetEndpoint      = @"/widget";
+
+const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 @implementation CountlyStarRating
 #if TARGET_OS_IOS
 {
     UIButton* btn_star[5];
 }
-
-const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 + (instancetype)sharedInstance
 {
@@ -68,6 +83,8 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     return self;
 }
 
+#pragma mark - Star Rating
+
 - (void)showDialog:(void(^)(NSInteger rating))completion
 {
     if (!CountlyConsentManager.sharedInstance.consentForStarRating)
@@ -100,11 +117,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         COUNTLY_LOG(@"UIAlertController's contentViewController can not be set: \n%@", exception);
     }
 
-    self.alertWindow = [UIWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
-    self.alertWindow.rootViewController = CLYInternalViewController.new;
-    self.alertWindow.windowLevel = UIWindowLevelAlert;
-    [self.alertWindow makeKeyAndVisible];
-    [self.alertWindow.rootViewController presentViewController:self.alertController animated:YES completion:nil];
+    [CountlyCommon.sharedInstance tryPresentingViewController:self.alertController];
 }
 
 - (void)checkForAutoAsk
@@ -204,8 +217,6 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventStarRating segmentation:segmentation];
     }
 
-    self.alertWindow.hidden = YES;
-    self.alertWindow = nil;
     self.alertController = nil;
     self.ratingCompletion = nil;
 }
@@ -218,6 +229,140 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 - (UIColor *)passiveStarColor
 {
     return [UIColor colorWithWhite:178/255.0 alpha:1];
+}
+
+#pragma mark - Feedback Widget
+
+- (void)checkFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
+{
+    if (!CountlyConsentManager.sharedInstance.consentForStarRating)
+        return;
+
+    if (!widgetID.length)
+        return;
+
+    NSURL* widgetCheckURL = [self widgetCheckURL:widgetID];
+    NSURLRequest* feedbackWidgetCheckRequest = [NSURLRequest requestWithURL:widgetCheckURL];
+    NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:feedbackWidgetCheckRequest completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    {
+        NSDictionary* widgetInfo = nil;
+
+        if (!error)
+        {
+            widgetInfo = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+        }
+
+        if (!error)
+        {
+            NSMutableDictionary* userInfo = widgetInfo.mutableCopy;
+
+            if (![widgetInfo[kCountlySRKeyID] isEqualToString:widgetID])
+            {
+                userInfo[NSLocalizedDescriptionKey] = [NSString stringWithFormat:@"Feedback widget with ID %@ is not available.", widgetID];
+                error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorFeedbackWidgetNotAvailable userInfo:userInfo];
+            }
+            else if (![self isDeviceTargetedByWidget:widgetInfo])
+            {
+                userInfo[NSLocalizedDescriptionKey] = [NSString stringWithFormat:@"Feedback widget with ID %@ does not include this device in target devices list.", widgetID];
+                error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorFeedbackWidgetNotTargetedForDevice userInfo:userInfo];
+            }
+        }
+
+        if (error)
+        {
+            dispatch_async(dispatch_get_main_queue(), ^
+            {
+                if (completionHandler)
+                    completionHandler(error);
+            });
+            return;
+        }
+
+        dispatch_async(dispatch_get_main_queue(), ^
+        {
+            [self presentFeedbackWidgetWithID:widgetID completionHandler:completionHandler];
+        });
+    }];
+
+    [task resume];
+}
+
+- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
+{
+    __block CLYInternalViewController* webVC = CLYInternalViewController.new;
+    webVC.view.backgroundColor = UIColor.whiteColor;
+    webVC.view.bounds = UIScreen.mainScreen.bounds;
+    webVC.modalPresentationStyle = UIModalPresentationCustom;
+
+    WKWebView* webView = [WKWebView.alloc initWithFrame:webVC.view.bounds];
+    [webVC.view addSubview:webView];
+    NSURL* widgetDisplayURL = [self widgetDisplayURL:widgetID];
+    [webView loadRequest:[NSURLRequest requestWithURL:widgetDisplayURL]];
+
+    CLYButton* dismissButton = [CLYButton dismissAlertButton];
+    dismissButton.onClick = ^(id sender)
+    {
+        [webVC dismissViewControllerAnimated:YES completion:^
+        {
+            if (completionHandler)
+                completionHandler(nil);
+
+            webVC = nil;
+        }];
+    };
+    [webVC.view addSubview:dismissButton];
+
+    CGPoint center = dismissButton.center;
+    center.y += 20; //NOTE: adjust dismiss button position for status bar
+    if (webVC.view.bounds.size.height == 812 || webVC.view.bounds.size.height == 896)
+        center.y += 24; //NOTE: adjust dismiss button position for iPhone X type of devices
+    dismissButton.center = center;
+
+    [CountlyCommon.sharedInstance tryPresentingViewController:webVC];
+}
+
+- (NSURL *)widgetCheckURL:(NSString *)widgetID
+{
+    NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
+
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlySRKeyWidgetID, widgetID];
+
+    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
+
+    NSString* URLString = [NSString stringWithFormat:@"%@%@%@%@?%@",
+                           CountlyConnectionManager.sharedInstance.host,
+                           kCountlyOutputEndpoint, kCountlyFeedbackEndpoint, kCountlyWidgetEndpoint,
+                           queryString];
+
+    return [NSURL URLWithString:URLString];
+}
+
+- (NSURL *)widgetDisplayURL:(NSString *)widgetID
+{
+    NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
+
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@&%@=%@",
+                   kCountlySRKeyWidgetID, widgetID,
+                   kCountlySRKeyAppVersion, CountlyDeviceInfo.appVersion];
+
+    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
+
+    NSString* URLString = [NSString stringWithFormat:@"%@%@?%@",
+                           CountlyConnectionManager.sharedInstance.host,
+                           kCountlyFeedbackEndpoint,
+                           queryString];
+
+    return [NSURL URLWithString:URLString];
+}
+
+- (BOOL)isDeviceTargetedByWidget:(NSDictionary *)widgetInfo
+{
+    BOOL isTablet = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad;
+    BOOL isPhone = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone;
+    BOOL isTabletTargeted = [widgetInfo[kCountlySRKeyTargetDevices][kCountlySRKeyTablet] boolValue];
+    BOOL isPhoneTargeted = [widgetInfo[kCountlySRKeyTargetDevices][kCountlySRKeyPhone] boolValue];
+
+    return ((isTablet && isTabletTargeted) || (isPhone && isPhoneTargeted));
 }
 
 #endif

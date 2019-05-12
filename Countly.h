@@ -8,7 +8,7 @@
 #import <CoreLocation/CoreLocation.h>
 #import "CountlyUserDetails.h"
 #import "CountlyConfig.h"
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_OSX)
 #import <UserNotifications/UserNotifications.h>
 #endif
 
@@ -236,10 +236,17 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)endEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
 
+/**
+ * Cancels a previously started timed event with given key.
+ * @discussion Trying to cancel an event with already cancelled (or ended or not yet started) key will have no effect.
+ * @param key Event key
+ */
+- (void)cancelEvent:(NSString *)key;
+
 
 
 #pragma mark - Push Notification
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_OSX)
 /**
  * Shows default system dialog that asks for user's permission to display notifications.
  * @discussion A unified convenience method that handles asking for notification permission on both iOS10 and older iOS versions with badge, sound and alert notification types.
@@ -254,7 +261,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param options Bitwise combination of notification types (badge, sound or alert) the app wants to display
  * @param completionHandler A completion handler block to be executed when user answers notification permission dialog
  */
-- (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler API_AVAILABLE(ios(10.0));
+- (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler API_AVAILABLE(ios(10.0), macos(10.14));
 
 /**
  * Records action event for a manually presented push notification with custom action buttons.
@@ -266,6 +273,18 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 
+/**
+ * Records push notification token to Countly Server for current device ID.
+ * @discussion Can be used to re-send push notification token for current device ID, after a new user logs in and device ID changes, without waiting for the app to be restarted.
+ * @discussion In general, push notification token is handled automatically and this method does not need to be called manually.
+ */
+- (void)recordPushNotificationToken;
+
+/**
+ * Clears push notification token on Countly Server for current device ID.
+ * @discussion Can be used to clear push notification token for current device ID, before the current user logs out and device ID changes, without waiting for the app to be restarted.
+ */
+- (void)clearPushNotificationToken;
 #endif
 
 
@@ -308,6 +327,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @c isGeoLocationEnabled property is deprecated. Please use @c disableLocationInfo method instead.
+ * @discussion Using this property will have no effect.
  */
 @property (nonatomic) BOOL isGeoLocationEnabled DEPRECATED_MSG_ATTRIBUTE("Use 'disableLocationInfo' method instead!");
 
@@ -327,6 +347,14 @@ NS_ASSUME_NONNULL_BEGIN
  * @param stackTrace Stack trace to be reported
  */
 - (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace;
+
+/**
+ * Records an unhandled exception and given stack trace manually.
+ * @discussion For recording non-native level fatal exceptions, where the app keeps running at native level and can recover.
+ * @param exception Exception to be reported
+ * @param stackTrace Stack trace to be reported
+ */
+- (void)recordUnhandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace;
 
 /**
  * Records custom logs to be delivered with crash report.
@@ -370,7 +398,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Records a visited view with given name.
  * @discussion Total duration of the view will be calculated on next @c recordView: call.
- * @discussion If AutoViewTracking feature is activated on initial configuration, this method does not need to be called manually.
+ * @discussion If AutoViewTracking feature is enabled on initial configuration, this method does not need to be called manually.
  * @param viewName Name of the view visited
  */
 - (void)recordView:(NSString *)viewName;
@@ -398,10 +426,17 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)removeExceptionForAutoViewTracking:(NSString *)exception;
 
 /**
- * Enables or disables AutoViewTracking, if AutoViewTracking feature is activated on initial configuration.
- * @discussion If AutoViewTracking feature is not activated on initial configuration, this property has no effect on enabling or disabling it later.
+ * Temporarily activates or deactivates AutoViewTracking, if AutoViewTracking feature is enabled on initial configuration.
+ * @discussion If AutoViewTracking feature is not enabled on initial configuration, this property has no effect.
  */
-@property (nonatomic) BOOL isAutoViewTrackingEnabled;
+@property (nonatomic) BOOL isAutoViewTrackingActive;
+
+/**
+ * @c isAutoViewTrackingEnabled property is deprecated. Please use @c isAutoViewTrackingActive property instead.
+ * @discussion Using this property will have no effect.
+ */
+@property (nonatomic) BOOL isAutoViewTrackingEnabled DEPRECATED_MSG_ATTRIBUTE("Use 'isAutoViewTrackingActive' property instead!");
+
 #endif
 
 
@@ -440,7 +475,54 @@ NS_ASSUME_NONNULL_BEGIN
  * @param completion A block object to be executed when user gives a star-rating or dismisses dialog without rating
  */
 - (void)askForStarRating:(void(^)(NSInteger rating))completion;
+
+/**
+ * Presents feedback widget with given ID in a WKWebView placed in a UIViewController.
+ * @discussion First, the availability of the feedback widget will be checked asynchronously.
+ * @discussion If the feedback widget with given ID is available, it will be modally presented.
+ * @discussion Otherwise, @c completionHandler will be called with an @c NSError.
+ * @discussion @c completionHandler will also be called with @c nil when feedback widget is dismissed by user.
+ * @param widgetID ID of the feedback widget created on Countly Server.
+ * @param completionHandler A completion handler block to be executed when feedback widget is dismissed by user or there is an error.
+ */
+- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler;
+
 #endif
+
+
+
+#pragma mark - Remote Config
+/**
+ * Returns last retrieved remote config value for given key, if exists.
+ * @discussion If remote config is never retrieved from Countly Server before, this method will return @c nil.
+ * @discussion If @c key is not defined in remote config on Countly Server, this method will return @c nil.
+ * @discussion If Countly Server is not reachable, this method will return the last retrieved value which is stored on device.
+ * @param key Remote config key specified on Countly Server
+ */
+- (id)remoteConfigValueForKey:(NSString *)key;
+
+/**
+ * Manually updates all locally stored remote config values by fetching latest values from Countly Server, and executes completion handler.
+ * @discussion @c completionHandler has an @c NSError parameter that will be either @ nil or an @c NSError object, depending on result.
+ * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure.
+ */
+- (void)updateRemoteConfigWithCompletionHandler:(void (^)(NSError * error))completionHandler;
+
+/**
+ * Manually updates locally stored remote config values only for specified keys, by fetching latest values from Countly Server, and executes completion handler.
+ * @discussion @c completionHandler has an @c NSError parameter that will be either @ nil or an @c NSError object, depending on result.
+ * @param keys An array of remote config keys to update
+ * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure
+ */
+- (void)updateRemoteConfigOnlyForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * error))completionHandler;
+
+/**
+ * Manually updates locally stored remote config values except for specified keys, by fetching latest values from Countly Server, and executes completion handler.
+ * @discussion @c completionHandler has an @c NSError parameter that will be either @ nil or an @c NSError object, depending on result.
+ * @param omitKeys An array of remote config keys to omit from updating
+ * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure
+ */
+- (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler;
 
 NS_ASSUME_NONNULL_END
 
