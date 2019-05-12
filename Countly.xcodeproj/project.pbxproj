@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B33E1D342288194100476F35 /* CountlyRemoteConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = B33E1D322288194100476F35 /* CountlyRemoteConfig.h */; };
+		B33E1D352288194100476F35 /* CountlyRemoteConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = B33E1D332288194100476F35 /* CountlyRemoteConfig.m */; };
 		B3FE593A209DB92F009EEF4A /* CountlyEvent.h in Headers */ = {isa = PBXBuildFile; fileRef = B3FE5915209DB92B009EEF4A /* CountlyEvent.h */; };
 		B3FE593B209DB92F009EEF4A /* CountlyLocationManager.m in Sources */ = {isa = PBXBuildFile; fileRef = B3FE5916209DB92B009EEF4A /* CountlyLocationManager.m */; };
 		B3FE593C209DB92F009EEF4A /* CountlyPushNotifications.m in Sources */ = {isa = PBXBuildFile; fileRef = B3FE5917209DB92B009EEF4A /* CountlyPushNotifications.m */; };
@@ -47,6 +49,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		B33E1D322288194100476F35 /* CountlyRemoteConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyRemoteConfig.h; sourceTree = "<group>"; };
+		B33E1D332288194100476F35 /* CountlyRemoteConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyRemoteConfig.m; sourceTree = "<group>"; };
 		B3FE590A209DB8DF009EEF4A /* Countly.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Countly.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B3FE590D209DB8DF009EEF4A /* Countly.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Countly.h; sourceTree = "<group>"; };
 		B3FE590E209DB8E0009EEF4A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -139,6 +143,8 @@
 				B3FE5931209DB92E009EEF4A /* CountlyConsentManager.m */,
 				B3FE591D209DB92B009EEF4A /* CountlyCrashReporter.h */,
 				B3FE5922209DB92C009EEF4A /* CountlyCrashReporter.m */,
+				B33E1D322288194100476F35 /* CountlyRemoteConfig.h */,
+				B33E1D332288194100476F35 /* CountlyRemoteConfig.m */,
 				B3FE5926209DB92C009EEF4A /* CountlyDeviceInfo.h */,
 				B3FE5928209DB92C009EEF4A /* CountlyDeviceInfo.m */,
 				B3FE5915209DB92B009EEF4A /* CountlyEvent.h */,
@@ -169,6 +175,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B33E1D342288194100476F35 /* CountlyRemoteConfig.h in Headers */,
 				B3FE5961209DBD39009EEF4A /* Countly.h in Headers */,
 				B3FE5949209DB92F009EEF4A /* CountlyConfig.h in Headers */,
 				B3FE5954209DB92F009EEF4A /* CountlyUserDetails.h in Headers */,
@@ -265,6 +272,7 @@
 				B3FE5945209DB92F009EEF4A /* CountlyStarRating.m in Sources */,
 				B3FE595D209DB92F009EEF4A /* CountlyConfig.m in Sources */,
 				B3FE5947209DB92F009EEF4A /* CountlyCrashReporter.m in Sources */,
+				B33E1D352288194100476F35 /* CountlyRemoteConfig.m in Sources */,
 				B3FE595E209DB92F009EEF4A /* CountlyNotificationService.m in Sources */,
 				B3FE5941209DB92F009EEF4A /* CountlyAPM.m in Sources */,
 				B3FE593F209DB92F009EEF4A /* Countly.m in Sources */,
